@@ -1,12 +1,15 @@
 package ossutils
 
 import (
+	"fmt"
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"osslist/pkg/logging"
 	"osslist/pkg/scacher"
+	"osslist/pkg/util"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -127,8 +130,10 @@ func (w *OSSWalker) walkRecursive(bucket *oss.Bucket, prefix string, outChan cha
 				// 提取文件名部分用于检查扩展名
 				nameCheck := path.Base(obj.Key)
 				if !w.shouldExcludeFile(nameCheck) {
-					outChan <- obj.Key
-					logging.Infof("discover the file: %s", obj.Key)
+					// 格式化输出：Key [Size] [LastModified]
+					outInfo := fmt.Sprintf("%s [S:%s] [T:%s]", obj.Key, util.FormatFileSize(obj.Size), obj.LastModified.Format(time.RFC3339))
+					outChan <- outInfo
+					logging.Infof("discover the file: %s", outInfo)
 				}
 			}
 		}

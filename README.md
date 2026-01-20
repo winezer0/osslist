@@ -1,12 +1,11 @@
-# 阿里云OSS文件列表树形展示工具
+# 阿里云OSS文件展示工具
 
-本工具用于列出阿里云OSS存储空间中的所有文件，并以树形结构展示。
+本工具用于列出阿里云OSS存储空间中的所有文件。
 
 ## 功能特点
 
 - 连接阿里云OSS并列出指定存储空间中的所有文件
-- 以直观的树形结构展示文件和目录层次关系
-- 支持指定前缀过滤，只显示特定目录下的文件
+- 支持指定 前缀/路径/后缀 过滤，只显示特定目录下的文件
 - 命令行界面，易于使用
 
 ## 安装和使用
@@ -30,51 +29,6 @@ go build -o osslist
 ```
 
 ### 使用方法
-
-```bash
-./osslist --accessKeyId=<accessKeyId> --accessKeySecret=<accessKeySecret> --bucket=<bucketName> [--endpoint=<endpoint>] [--prefix=<prefix>]
-```
-
-#### 参数说明
-
-- `-e, --endpoint`: 阿里云OSS endpoint，例如：`http://oss-cn-hangzhou.aliyuncs.com`（可选）
-- `-i, --accessKeyId`: 阿里云 Access Key ID（必需）
-- `-s, --accessKeySecret`: 阿里云 Access Key Secret（必需）
-- `-b, --bucket`: OSS存储空间名称（必需）
-- `-p, --prefix`: 只列出具有指定前缀的文件，相当于只显示某个目录下的文件（可选）
-
-#### 示例
-
-```bash
-# 列出存储空间中的所有文件（自动推断endpoint）
-./osslist --accessKeyId=YOUR_ACCESS_KEY_ID --accessKeySecret=YOUR_ACCESS_KEY_SECRET --bucket=my-bucket
-
-# 指定endpoint列出存储空间中的所有文件
-./osslist --endpoint=http://oss-cn-hangzhou.aliyuncs.com --accessKeyId=YOUR_ACCESS_KEY_ID --accessKeySecret=YOUR_ACCESS_KEY_SECRET --bucket=my-bucket
-
-# 只列出指定目录下的文件
-./osslist --accessKeyId=YOUR_ACCESS_KEY_ID --accessKeySecret=YOUR_ACCESS_KEY_SECRET --bucket=my-bucket --prefix=documents/
-```
-
-### 直接运行（无需编译）
-
-```bash
-go run main.go --accessKeyId=<accessKeyId> --accessKeySecret=<accessKeySecret> --bucket=<bucketName>
-```
-
-## 输出示例
-
-```
-/
-├── folder1/
-│   ├── subfolder/
-│   │   └── file2.txt
-│   └── file1.txt
-└── folder2/
-    └── file3.txt
-```
-
-其中以 `/` 结尾的表示目录，否则为文件。
 
 ## 注意事项
 

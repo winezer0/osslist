@@ -85,12 +85,14 @@ func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
 	defer logging.Sync()
 
 	// 如果启用了默认排除列表，则添加默认排除项
+	opts.ExcludeExts = util.ParseCommaStringsToList(opts.ExcludeExts)
 	if opts.DefaultExcludeExts {
 		defaultExcludes := []string{"mp3", "woff", "woff2", "css", "mp4", "jpg", "jpeg", "png", "avi", "mov", ossutils.NONE}
 		opts.ExcludeExts = append(opts.ExcludeExts, defaultExcludes...)
 	}
 
 	// 如果启用了默认目录排除关键字列表，则添加默认关键字
+	opts.ExcludeKeys = util.ParseCommaStringsToList(opts.ExcludeKeys)
 	if opts.DefaultExcludeKeys {
 		defaultExcludeKeys := []string{"chunks", "temp", "cache"}
 		opts.ExcludeKeys = append(opts.ExcludeKeys, defaultExcludeKeys...)
