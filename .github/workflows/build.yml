@@ -1,0 +1,87 @@
+name: Build and Release
+
+on:
+  # 手动触发工作流
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+        default: 'v1.0.0'
+  # 当创建 tag 时触发
+  push:
+    tags:
+      - 'v*.*.*'
+  # 当创建 release 时触发
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build Windows binary
+        run: |
+          mkdir -p bin
+          GOOS=windows GOARCH=amd64 go build -o bin/osslist.exe ./cmd/osslist
+
+      - name: Build Linux binary
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o bin/osslist ./cmd/osslist
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.release.tag_name }}" != "" ]; then
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" != "" ]; then
+            echo "VERSION=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=v1.0.0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: Release ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Windows binary to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url || steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/osslist.exe
+          asset_name: osslist-windows-amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux binary to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url || steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/osslist
+          asset_name: osslist-linux-amd64
+          asset_content_type: application/octet-stream
