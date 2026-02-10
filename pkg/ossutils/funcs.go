@@ -2,25 +2,22 @@ package ossutils
 
 import (
 	"fmt"
-	"osslist/pkg/logging"
-	"osslist/pkg/scacher"
-	"osslist/pkg/util"
+	"github.com/winezer0/xutils/cacher"
+	"github.com/winezer0/xutils/hashutils"
+	"github.com/winezer0/xutils/logging"
+	"github.com/winezer0/xutils/utils"
 	"strings"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 // GetBuckets 获取当前账号下的所有 Bucket 列表
-func GetBuckets(accessKeyID, accessKeySecret string, cacher *scacher.Cacher) ([]oss.BucketProperties, error) {
+func GetBuckets(accessKeyID, accessKeySecret string, cacheManager *cacher.CacheManager) ([]oss.BucketProperties, error) {
 	// 从缓存文件中获取
-	cacheKey := util.GetStringHash(accessKeyID+accessKeySecret, 8)
-	if value, exist := cacher.Get(cacheKey); exist {
-		var bucketProperties []oss.BucketProperties
-		if err := util.LoadJSONString(value, &bucketProperties); err == nil {
-			return bucketProperties, err
-		} else {
-			logging.Errorf("load json %s to bucket error: %v", value, err)
-		}
+	cacheKey := hashutils.GetStrHashShort(accessKeyID + accessKeySecret)
+	var bucketProperties []oss.BucketProperties
+	if exist := cacheManager.GetAs(cacheKey, &bucketProperties); exist {
+		return bucketProperties, nil
 	}
 
 	// 创建用于 GetBuckets 的 client（必须用全局 endpoint）
@@ -38,7 +35,7 @@ func GetBuckets(accessKeyID, accessKeySecret string, cacher *scacher.Cacher) ([]
 	}
 
 	if len(bucketInfo.Buckets) > 0 {
-		cacher.Set(cacheKey, util.ToJson(bucketInfo.Buckets))
+		cacheManager.Set(cacheKey, bucketInfo.Buckets)
 	}
 
 	return bucketInfo.Buckets, nil
@@ -59,7 +56,7 @@ func FilterOrFallbackBuckets(buckets []oss.BucketProperties, bucketName string) 
 				return []oss.BucketProperties{b} // 找到，只返回这个
 			}
 		}
-		logging.Errorf("no bucket %s found in %s", bucketName, util.ToJson(buckets))
+		logging.Errorf("no bucket %s found in %s", bucketName, utils.ToJSON(buckets))
 	}
 
 	// 情况2: buckets 为空 或 未找到指定 bucket
@@ -107,7 +104,7 @@ func BuildEndpoint(bucket oss.BucketProperties, defaultEndpoint string) string {
 }
 
 // WalkerBucket 封装单个 Bucket 的处理逻辑
-func WalkerBucket(bucketName, endpoint, keyId, keySecret, prefix string, exSuffixes []string, excludeKeys []string, concurrency int, cacher *scacher.Cacher, outChan chan<- string) error {
+func WalkerBucket(bucketName, endpoint, keyId, keySecret, prefix string, exSuffixes []string, excludeKeys []string, concurrency int, cacher *cacher.CacheManager, outChan chan<- string) error {
 	client, err := oss.New(endpoint, keyId, keySecret)
 	if err != nil {
 		return fmt.Errorf("failed to create client for bucket %s (endpoint: %s): %v", bucketName, endpoint, err)

@@ -2,14 +2,13 @@ package ossutils
 
 import (
 	"fmt"
+	"github.com/winezer0/xutils/cacher"
+	"github.com/winezer0/xutils/logging"
+	"github.com/winezer0/xutils/utils"
 	"path"
 	"strings"
 	"sync"
 	"time"
-
-	"osslist/pkg/logging"
-	"osslist/pkg/scacher"
-	"osslist/pkg/util"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -17,13 +16,13 @@ import (
 // OSSWalker 处理 OSS 遍历逻辑
 type OSSWalker struct {
 	Concurrency   int
-	Cacher        *scacher.Cacher
+	CacheManager  *cacher.CacheManager
 	excludeExtMap map[string]struct{}
 	excludeKeyMap map[string]struct{}
 }
 
 // NewOSSWalker 创建一个新的 OSSWalker 实例
-func NewOSSWalker(exclude []string, excludeKeys []string, concurrency int, cacher *scacher.Cacher) *OSSWalker {
+func NewOSSWalker(exclude []string, excludeKeys []string, concurrency int, cacheManager *cacher.CacheManager) *OSSWalker {
 	if concurrency <= 0 {
 		concurrency = 1
 	}
@@ -48,7 +47,7 @@ func NewOSSWalker(exclude []string, excludeKeys []string, concurrency int, cache
 
 	return &OSSWalker{
 		Concurrency:   concurrency,
-		Cacher:        cacher,
+		CacheManager:  cacheManager,
 		excludeExtMap: excludeExtMap,
 		excludeKeyMap: excludeKeyMap,
 	}
@@ -80,8 +79,8 @@ func (w *OSSWalker) walkRecursive(bucket *oss.Bucket, prefix string, outChan cha
 	// 检查缓存
 	cacheKey := bucket.BucketName + ":" + prefix
 	skipFiles := false
-	if w.Cacher != nil {
-		if _, ok := w.Cacher.Get(cacheKey); ok {
+	if w.CacheManager != nil {
+		if _, ok := w.CacheManager.Get(cacheKey); ok {
 			logging.Debugf("cache hit for %s, skipping files", prefix)
 			// 缓存命中，标记跳过文件处理，但仍需继续遍历以发现子目录
 			skipFiles = true
@@ -131,7 +130,7 @@ func (w *OSSWalker) walkRecursive(bucket *oss.Bucket, prefix string, outChan cha
 				nameCheck := path.Base(obj.Key)
 				if !w.shouldExcludeFile(nameCheck) {
 					// 格式化输出：Key [Size] [LastModified]
-					outInfo := fmt.Sprintf("%s [S:%s] [T:%s]", obj.Key, util.FormatFileSize(obj.Size), obj.LastModified.Format(time.RFC3339))
+					outInfo := fmt.Sprintf("%s [S:%s] [T:%s]", obj.Key, utils.FormatFileSize(obj.Size), obj.LastModified.Format(time.RFC3339))
 					outChan <- outInfo
 					logging.Infof("discover the file: %s", outInfo)
 				}
@@ -147,8 +146,8 @@ func (w *OSSWalker) walkRecursive(bucket *oss.Bucket, prefix string, outChan cha
 
 	// 遍历完成，写入缓存
 	// 仅记录 "1" 表示该目录已完成扫描
-	if w.Cacher != nil {
-		w.Cacher.Set(cacheKey, "1")
+	if w.CacheManager != nil {
+		w.CacheManager.Set(cacheKey, "1")
 	}
 }
 
