@@ -2,6 +2,13 @@
 
 本工具用于列出阿里云OSS存储空间中的所有文件。
 
+
+## 免责声明
+
+继续阅读文章或使用工具视为您已同意《 NOVASEC免责声明》: [NOVASEC免责声明](https://mp.weixin.qq.com/s/iRWRVxkYu7Fx5unxA34I7g)
+
+
+
 ## 功能特点
 
 - 连接阿里云OSS并列出指定存储空间中的所有文件
