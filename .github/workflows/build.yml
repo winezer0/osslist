@@ -1,9 +1,12 @@
 name: Release Build
 
 on:
-  # 1. 当通过 GitHub UI 创建 Release 时触发（已有 tag）
+  # 1. 仅监听真正需要的事件：
+  # - published: 正式发布（非草稿）
+  # - prereleased: 预发布（如 v1.0.0-rc1）
   release:
-    types: [created]
+    types: [published, prereleased]
+
 
   # 2. 手动触发：允许用户输入版本号
   workflow_dispatch:
